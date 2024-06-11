@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: nando_api
+    restart: unless-stopped
+    ports:
+      - "5000:80"
+    volumes:
+      - ./api:/var/www/html
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=${API_DB_DATABASE}
+      - DB_USERNAME=${API_DB_USERNAME}
+      - DB_PASSWORD=${API_DB_PASSWORD}
+      # - REDIS_HOST=redis
+      # - REDIS_PORT=6379
+    depends_on:
+      - db
+    networks:
+      - nando-network
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: nando_web
+    ports:
+      - "4444:80"
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    environment:
+      - NODE_ENV=development
+      - API_URL=http://localhost:5000/
+    networks:
+      - nando-network
+
+  wordpress:
+    image: wordpress:latest
+    container_name: nando_wordpress
+    ports:
+      - "7000:80"
+    environment:
+      # Need to create wordpress_db and grant privileges to wordpress
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_DATABASE}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USERNAME}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+    depends_on:
+      - db
+      - api
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - nando-network
+
+  db:
+    image: mysql:8.0
+    container_name: nando_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${API_DB_DATABASE}
+      MYSQL_USER: ${API_DB_USERNAME}
+      MYSQL_PASSWORD: ${API_DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - nando-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: nando_phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    depends_on:
+      - db
+    networks:
+      - nando-network
+
+networks:
+  nando-network:
+    driver: bridge
+
+volumes:
+  wordpress_data:
+  db_data:
