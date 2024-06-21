@@ -30,8 +30,9 @@ services:
       context: ./web
       dockerfile: Dockerfile
     container_name: nando_web
+    restart: unless-stopped
     ports:
-      - "4444:80"
+      - "6001:80"
     volumes:
       - ./web:/app
       - /app/node_modules
@@ -46,6 +47,7 @@ services:
   wordpress:
     image: wordpress:latest
     container_name: nando_wordpress
+    restart: unless-stopped
     ports:
       - "7000:80"
     environment:
