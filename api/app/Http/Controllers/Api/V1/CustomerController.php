@@ -8,6 +8,8 @@ use App\Http\Resources\V1\CustomerCollection;
 use App\Models\Customer;
 use App\Filters\V1\CustomersFilter;
 use Illuminate\Http\Request;
+use App\Http\Requests\V1\StoreCustomerRequest;
+use App\Http\Requests\V1\UpdateCustomerRequest;
 
 class CustomerController extends Controller
 {
@@ -30,16 +32,6 @@ class CustomerController extends Controller
         }
 
         return new CustomerCollection($customers->paginate()->appends($request->query()));
-
-
-
-        // if (count($filterItems) == 0) {
-        //     return new CustomerCollection(Customer::paginate());
-        // } else {
-        //     $customers = Customer::where($filterItems)->paginate();
-
-        //     return new CustomerCollection($customers->appends($request->query()));
-        // }
     }
 
     /**
@@ -48,9 +40,9 @@ class CustomerController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreCustomerRequest $request)
     {
-        //
+        return new CustomerResource(Customer::create($request->all()));
     }
 
     /**
@@ -61,6 +53,12 @@ class CustomerController extends Controller
      */
     public function show(Customer $customer)
     {
+        $includeInvoices = request()->query('includeInvoices');
+
+        if ($includeInvoices) {
+            return new CustomerResource($customer->loadMissing('invoices'));
+        }
+
         return new CustomerResource($customer);
     }
 
@@ -71,9 +69,9 @@ class CustomerController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateCustomerRequest $request, Customer $customer)
     {
-        //
+        $customer->update($request->all());
     }
 
     /**
